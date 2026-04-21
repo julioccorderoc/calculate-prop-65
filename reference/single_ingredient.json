@@ -1,0 +1,10 @@
+{
+  "capsules_per_day": 2,
+  "ingredients": [
+    {
+      "name": "Loquat Leaf 10:1",
+      "lead_ppm": 0.3604,
+      "mg_per_capsule": 600
+    }
+  ]
+}

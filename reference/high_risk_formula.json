@@ -1,0 +1,11 @@
+{
+  "capsules_per_day": 2,
+  "madl_ug_per_day": 0.5,
+  "ingredients": [
+    {
+      "name": "Demo High-Lead Botanical",
+      "lead_ppm": 2.5,
+      "mg_per_capsule": 500
+    }
+  ]
+}

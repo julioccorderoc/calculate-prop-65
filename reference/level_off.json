@@ -1,0 +1,21 @@
+{
+  "capsules_per_day": 2,
+  "madl_ug_per_day": 0.5,
+  "ingredients": [
+    {
+      "name": "White Mulberry Leaf",
+      "lead_ppm": 0.60,
+      "mg_per_capsule": 250
+    },
+    {
+      "name": "Veggie Blend",
+      "lead_ppm": 0.40,
+      "mg_per_capsule": 180
+    },
+    {
+      "name": "Cinnamon Cassia 12:1",
+      "lead_ppm": 0.80,
+      "mg_per_capsule": 85
+    }
+  ]
+}
