@@ -26,10 +26,10 @@ def test_main_returns_one_when_exposure_is_massively_over_madl(
     assert exit_code == 1
 
 
-def test_main_returns_one_for_level_off_reference(
+def test_main_returns_one_for_multi_ingredient_reference(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    exit_code = main(["--ingredients-file", _reference_path("level_off.json")])
+    exit_code = main(["--ingredients-file", _reference_path("multi_ingredient.json")])
     assert exit_code == 1
 
 
@@ -45,6 +45,24 @@ def test_main_returns_one_for_high_risk_formula_reference(
 ) -> None:
     exit_code = main(["--ingredients-file", _reference_path("high_risk_formula.json")])
     assert exit_code == 1
+
+
+def test_main_returns_zero_for_safe_formula_reference(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(["--ingredients-file", _reference_path("safe_formula.json"), "--json"])
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["outputs"]["risk_level"] == "SAFE"
+
+
+def test_main_returns_zero_for_caution_formula_reference(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    exit_code = main(["--ingredients-file", _reference_path("caution_formula.json"), "--json"])
+    assert exit_code == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["outputs"]["risk_level"] == "CAUTION"
 
 
 def test_main_with_json_flag_emits_valid_json_to_stdout(
@@ -80,24 +98,24 @@ def test_main_with_negative_lead_ppm_exits_with_code_two() -> None:
 def test_cli_capsules_per_day_overrides_file_value(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    # Level Off file has capsules_per_day=2. Override to 1 via CLI and confirm
+    # multi_ingredient file has capsules_per_day=2. Override to 1 via CLI and confirm
     # the per-day exposure in the JSON output is exactly half.
     exit_code_at_two = main(
-        ["-f", _reference_path("level_off.json"), "--json"]
+        ["-f", _reference_path("multi_ingredient.json"), "--json"]
     )
     out_at_two = capsys.readouterr().out
     payload_at_two = json.loads(out_at_two)
     ug_per_day_at_two = payload_at_two["outputs"]["lead_ug_per_day"]
 
     exit_code_at_one = main(
-        ["-f", _reference_path("level_off.json"), "-c", "1", "--json"]
+        ["-f", _reference_path("multi_ingredient.json"), "-c", "1", "--json"]
     )
     out_at_one = capsys.readouterr().out
     payload_at_one = json.loads(out_at_one)
     ug_per_day_at_one = payload_at_one["outputs"]["lead_ug_per_day"]
 
     assert ug_per_day_at_one == pytest.approx(ug_per_day_at_two / 2.0)
-    # At 1 cap/day Level Off drops to 0.290 ug/day → under MADL (0 exit).
+    # At 1 cap/day the formula drops to 0.290 ug/day → under MADL (0 exit).
     assert exit_code_at_one == 0
     assert exit_code_at_two == 1
 

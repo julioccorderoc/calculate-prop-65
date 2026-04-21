@@ -16,7 +16,7 @@ def sample_ingredient() -> Ingredient:
 
 
 @pytest.fixture
-def level_off_ingredients() -> list[Ingredient]:
+def multi_ingredient_ingredients() -> list[Ingredient]:
     return [
         Ingredient(name="White Mulberry Leaf", lead_ppm=0.60, mg_per_capsule=250.0),
         Ingredient(name="Cinnamon Cassia 12:1", lead_ppm=0.80, mg_per_capsule=85.0),
@@ -25,9 +25,9 @@ def level_off_ingredients() -> list[Ingredient]:
 
 
 @pytest.fixture
-def level_off_result(level_off_ingredients: list[Ingredient]) -> ExposureResult:
+def multi_ingredient_result(multi_ingredient_ingredients: list[Ingredient]) -> ExposureResult:
     return calculate_lead_exposure(
-        ingredients=level_off_ingredients,
+        ingredients=multi_ingredient_ingredients,
         capsules_per_day=2,
     )
 

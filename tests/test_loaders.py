@@ -101,7 +101,7 @@ def test_load_ingredients_file_raises_on_malformed_json(
         load_ingredients_file(path)
 
 
-def test_load_ingredients_file_on_level_off_reference(reference_dir: Path) -> None:
-    ingredients, overrides = load_ingredients_file(reference_dir / "level_off.json")
+def test_load_ingredients_file_on_multi_ingredient_reference(reference_dir: Path) -> None:
+    ingredients, overrides = load_ingredients_file(reference_dir / "multi_ingredient.json")
     assert len(ingredients) == 3
     assert overrides["capsules_per_day"] == 2

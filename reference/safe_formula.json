@@ -1,0 +1,26 @@
+{
+  "capsules_per_day": 2,
+  "madl_ug_per_day": 0.5,
+  "ingredients": [
+    {
+      "name": "Magnesium Glycinate",
+      "lead_ppm": 0.05,
+      "mg_per_capsule": 300
+    },
+    {
+      "name": "Vitamin C (Ascorbic Acid)",
+      "lead_ppm": 0.02,
+      "mg_per_capsule": 250
+    },
+    {
+      "name": "Zinc Picolinate",
+      "lead_ppm": 0.10,
+      "mg_per_capsule": 50
+    },
+    {
+      "name": "Riboflavin (B2)",
+      "lead_ppm": 0.03,
+      "mg_per_capsule": 25
+    }
+  ]
+}

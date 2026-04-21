@@ -1,0 +1,21 @@
+{
+  "capsules_per_day": 2,
+  "madl_ug_per_day": 0.5,
+  "ingredients": [
+    {
+      "name": "Turmeric Extract 95%",
+      "lead_ppm": 1.20,
+      "mg_per_capsule": 100
+    },
+    {
+      "name": "Ginger Root Powder",
+      "lead_ppm": 0.40,
+      "mg_per_capsule": 50
+    },
+    {
+      "name": "Black Pepper Extract (Piperine)",
+      "lead_ppm": 0.50,
+      "mg_per_capsule": 10
+    }
+  ]
+}
