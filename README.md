@@ -8,27 +8,15 @@ Raw material passing COA under USP <232> / ICH Q3D (oral Pb PDE 5 ug/day) can st
 
 Repo ships as an [Agent Skill](https://github.com/anthropics/skills) — any LLM harness supporting skills can invoke it when users ask about Prop 65 lead calculations, MADL comparisons, or California warning decisions. `SKILL.md` at root is the manifest.
 
-### Project scope (recommended)
-
 ```bash
-npx skills add <owner>/<repo>
+npx skills add julioccorderoc/calculate-prop-65 -g -y
 ```
-
-Replace `<owner>/<repo>` with the GitHub coordinates of this repo. Installs into `./.claude/skills/` (or the agent-specific skills dir your harness uses).
-
-### Global scope
-
-```bash
-npx skills add <owner>/<repo> -g
-```
-
-Installs into `~/.claude/skills/` (global for all projects).
 
 ### Other sources
 
 ```bash
-npx skills add https://github.com/<owner>/<repo>            # full URL
-npx skills add git@github.com:<owner>/<repo>.git            # SSH
+npx skills add https://github.com/julioccorderoc/calculate-prop-65            # full URL
+npx skills add git@github.com:julioccorderoc/calculate-prop-65.git            # SSH
 npx skills add ./calculate-prop-65                          # local path
 ```
 
@@ -41,7 +29,7 @@ Once installed, the agent invokes the skill on triggers like "Prop 65", "MADL", 
 Managed with [uv](https://docs.astral.sh/uv/). Python >= 3.10.
 
 ```bash
-git clone <repo-url> calculate-prop-65
+git clone https://github.com/julioccorderoc/calculate-prop-65.git
 cd calculate-prop-65
 uv sync
 ```
