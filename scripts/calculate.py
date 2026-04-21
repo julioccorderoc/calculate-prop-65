@@ -8,8 +8,9 @@
 """CLI entry point for the Prop 65 lead-exposure calculator.
 
 Thin orchestration layer: parse args → gather ingredients via loaders →
-call the calculator → render via renderers. All domain logic lives in the
-sibling modules so this file stays focused on wiring.
+resolve CLI/file precedence → call the calculator → render via renderers.
+All domain logic lives in the sibling modules so this file stays focused
+on wiring.
 """
 
 from __future__ import annotations
@@ -22,18 +23,16 @@ from typing import Sequence
 
 # Support both `python -m scripts.calculate ...` (relative) and running the
 # file directly via `uv run scripts/calculate.py ...` (no package context).
+# Go through the package-level namespace for the core domain names so this
+# file is robust to internal module reshuffles in the sibling modules.
 try:
-    from .calculator import calculate_lead_exposure
-    from .constants import MADL_LEAD_UG_PER_DAY
+    from . import Ingredient, MADL_LEAD_UG_PER_DAY, calculate_lead_exposure
     from .loaders import load_ingredients_file, parse_ingredient_triplet
-    from .models import Ingredient
     from .renderers import render_report_to_console, render_report_to_json
 except ImportError:
     sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-    from scripts.calculator import calculate_lead_exposure
-    from scripts.constants import MADL_LEAD_UG_PER_DAY
+    from scripts import Ingredient, MADL_LEAD_UG_PER_DAY, calculate_lead_exposure
     from scripts.loaders import load_ingredients_file, parse_ingredient_triplet
-    from scripts.models import Ingredient
     from scripts.renderers import render_report_to_console, render_report_to_json
 
 
@@ -97,6 +96,38 @@ def build_arg_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def resolve_run_config(
+    cli_capsules_per_day: int | None,
+    cli_madl: float,
+    cli_madl_default: float,
+    file_overrides: dict,
+) -> tuple[int, float]:
+    """Merge CLI args + ingredients-file overrides into a final (capsules_per_day, madl) pair.
+
+    Precedence (load-bearing regulatory logic; do NOT simplify):
+      - capsules_per_day: CLI wins if provided; else file; else raise ValueError.
+      - madl: CLI wins only if CLI value != cli_madl_default (otherwise defer
+        to file; else the default). The asymmetry exists so that argparse's
+        default (0.5 µg/day Prop 65 MADL) does not silently clobber a
+        deliberate ``madl_ug_per_day`` set in a formula file.
+    """
+    if cli_capsules_per_day is not None:
+        capsules_per_day = cli_capsules_per_day
+    else:
+        capsules_per_day = file_overrides.get("capsules_per_day")
+    if not capsules_per_day:
+        raise ValueError(
+            "--capsules-per-day is required (or set it in the ingredients file)."
+        )
+
+    if cli_madl != cli_madl_default:
+        madl = cli_madl
+    else:
+        madl = file_overrides.get("madl_ug_per_day", cli_madl)
+
+    return capsules_per_day, madl
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """CLI entry point. Returns 0 (safe) or 1 (over MADL). argparse handles 2."""
     parser = build_arg_parser()
@@ -115,24 +146,21 @@ def main(argv: Sequence[str] | None = None) -> int:
         for triplet in args.ingredient:
             try:
                 ingredients.append(parse_ingredient_triplet(triplet))
-            except argparse.ArgumentTypeError as exc:
+            except ValueError as exc:
                 parser.error(str(exc))
 
     if not ingredients:
         parser.error("Provide at least one --ingredient or an --ingredients-file.")
 
-    capsules_per_day = args.capsules_per_day or file_overrides.get("capsules_per_day")
-    if not capsules_per_day:
-        parser.error(
-            "--capsules-per-day is required (or set it in the ingredients file)."
+    try:
+        capsules_per_day, madl = resolve_run_config(
+            cli_capsules_per_day=args.capsules_per_day,
+            cli_madl=args.madl,
+            cli_madl_default=MADL_LEAD_UG_PER_DAY,
+            file_overrides=file_overrides,
         )
-
-    # Only defer to the file's MADL if the user didn't override it on the CLI.
-    madl = (
-        args.madl
-        if args.madl != MADL_LEAD_UG_PER_DAY
-        else file_overrides.get("madl_ug_per_day", args.madl)
-    )
+    except ValueError as exc:
+        parser.error(str(exc))
 
     try:
         result = calculate_lead_exposure(

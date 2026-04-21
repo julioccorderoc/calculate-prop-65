@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.calculate import build_arg_parser, main
+from scripts.calculate import build_arg_parser, main, resolve_run_config
 
 
 def _reference_path(name: str) -> str:
@@ -138,3 +138,128 @@ def test_build_arg_parser_returns_an_argument_parser() -> None:
 
     parser = build_arg_parser()
     assert isinstance(parser, argparse.ArgumentParser)
+
+
+# ---------------------------------------------------------------------------
+# Direct unit tests for resolve_run_config — locks in the asymmetric
+# CLI-vs-file precedence rule documented in CLAUDE.md so a future refactor
+# cannot silently "simplify" it.
+# ---------------------------------------------------------------------------
+
+
+_DEFAULT_MADL = 0.5
+
+
+def test_resolve_run_config_cli_capsules_with_no_file_overrides_uses_cli() -> None:
+    capsules, madl = resolve_run_config(
+        cli_capsules_per_day=3,
+        cli_madl=_DEFAULT_MADL,
+        cli_madl_default=_DEFAULT_MADL,
+        file_overrides={},
+    )
+    assert capsules == 3
+    assert madl == _DEFAULT_MADL
+
+
+def test_resolve_run_config_no_cli_capsules_falls_back_to_file() -> None:
+    capsules, madl = resolve_run_config(
+        cli_capsules_per_day=None,
+        cli_madl=_DEFAULT_MADL,
+        cli_madl_default=_DEFAULT_MADL,
+        file_overrides={"capsules_per_day": 2},
+    )
+    assert capsules == 2
+    assert madl == _DEFAULT_MADL
+
+
+def test_resolve_run_config_cli_capsules_overrides_file_capsules() -> None:
+    capsules, _madl = resolve_run_config(
+        cli_capsules_per_day=1,
+        cli_madl=_DEFAULT_MADL,
+        cli_madl_default=_DEFAULT_MADL,
+        file_overrides={"capsules_per_day": 4},
+    )
+    assert capsules == 1
+
+
+def test_resolve_run_config_missing_capsules_everywhere_raises_value_error() -> None:
+    with pytest.raises(ValueError, match="capsules-per-day"):
+        resolve_run_config(
+            cli_capsules_per_day=None,
+            cli_madl=_DEFAULT_MADL,
+            cli_madl_default=_DEFAULT_MADL,
+            file_overrides={},
+        )
+
+
+def test_resolve_run_config_cli_madl_at_default_defers_to_file_madl() -> None:
+    _capsules, madl = resolve_run_config(
+        cli_capsules_per_day=2,
+        cli_madl=_DEFAULT_MADL,
+        cli_madl_default=_DEFAULT_MADL,
+        file_overrides={"madl_ug_per_day": 1.25},
+    )
+    assert madl == 1.25
+
+
+def test_resolve_run_config_cli_madl_non_default_overrides_file_madl() -> None:
+    _capsules, madl = resolve_run_config(
+        cli_capsules_per_day=2,
+        cli_madl=5.0,
+        cli_madl_default=_DEFAULT_MADL,
+        file_overrides={"madl_ug_per_day": 1.25},
+    )
+    assert madl == 5.0
+
+
+def test_resolve_run_config_cli_madl_at_default_no_file_returns_default() -> None:
+    _capsules, madl = resolve_run_config(
+        cli_capsules_per_day=2,
+        cli_madl=_DEFAULT_MADL,
+        cli_madl_default=_DEFAULT_MADL,
+        file_overrides={},
+    )
+    assert madl == _DEFAULT_MADL
+
+
+def test_resolve_run_config_cli_madl_non_default_no_file_returns_cli_value() -> None:
+    _capsules, madl = resolve_run_config(
+        cli_capsules_per_day=2,
+        cli_madl=2.5,
+        cli_madl_default=_DEFAULT_MADL,
+        file_overrides={},
+    )
+    assert madl == 2.5
+
+
+@pytest.mark.parametrize(
+    ("cli_caps", "cli_madl", "cli_default", "file_overrides", "expected"),
+    [
+        # CLI caps always wins over file caps.
+        (7, 0.5, 0.5, {"capsules_per_day": 2}, (7, 0.5)),
+        # File caps used when CLI caps is absent.
+        (None, 0.5, 0.5, {"capsules_per_day": 2}, (2, 0.5)),
+        # CLI madl at default + file madl -> file wins.
+        (2, 0.5, 0.5, {"madl_ug_per_day": 0.8}, (2, 0.8)),
+        # CLI madl non-default + file madl -> CLI wins.
+        (2, 1.0, 0.5, {"madl_ug_per_day": 0.8}, (2, 1.0)),
+        # All from file, CLI only provides madl default.
+        (None, 0.5, 0.5, {"capsules_per_day": 2, "madl_ug_per_day": 0.7}, (2, 0.7)),
+    ],
+)
+def test_resolve_run_config_parametrized_matrix(
+    cli_caps: int | None,
+    cli_madl: float,
+    cli_default: float,
+    file_overrides: dict,
+    expected: tuple[int, float],
+) -> None:
+    assert (
+        resolve_run_config(
+            cli_capsules_per_day=cli_caps,
+            cli_madl=cli_madl,
+            cli_madl_default=cli_default,
+            file_overrides=file_overrides,
+        )
+        == expected
+    )

@@ -62,7 +62,7 @@ Repeat `-i` per raw material. Lead contributions add.
 ### From JSON formula file
 
 ```bash
-uv run scripts/calculate.py --ingredients-file reference/level_off.json
+uv run scripts/calculate.py --ingredients-file reference/multi_ingredient.json
 ```
 
 Use for versioned formulas or when same spec is referenced from multiple places. CLI flags `--capsules-per-day` and `--madl` override file values — test "what if 3 caps/day" without editing file.

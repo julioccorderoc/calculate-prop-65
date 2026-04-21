@@ -1,9 +1,9 @@
 [project]
 name = "calculate-prop-65"
 version = "0.1.0"
-description = "Add your description here"
+description = "California Prop 65 lead-exposure calculator for supplement capsule formulations."
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = []
 
 [dependency-groups]
