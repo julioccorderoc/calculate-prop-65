@@ -1,26 +1,26 @@
 ---
 name: calculate-prop-65
-description: Calculate California Prop 65 lead exposure (MADL 0.5 ug/day) for dietary supplement capsule formulations given Certificate of Analysis (COA) ppm values and per-capsule ingredient masses. Use whenever the user is deciding whether a supplement needs a Prop 65 warning label, reviewing heavy-metal COAs against California limits, budgeting lead across multi-ingredient capsule formulas, reformulating to reduce lead exposure, or comparing USP <232> / ICH Q3D COA specs to Prop 65. Triggers on "Prop 65", "Proposition 65", "MADL", "California warning", "lead in supplements", "capsule lead math", "heavy metal compliance for California", and similar formulator / QA / regulatory-affairs contexts.
+description: Calculate California Prop 65 lead exposure (MADL 0.5 ug/day) for dietary supplement capsule formulations from COA ppm values and per-capsule ingredient masses. Use for Prop 65 warning-label decisions, reviewing heavy-metal COAs vs California limits, budgeting lead across multi-ingredient capsules, reformulating to reduce lead, or comparing USP <232> / ICH Q3D COA specs to Prop 65. Triggers on "Prop 65", "Proposition 65", "MADL", "California warning", "lead in supplements", "capsule lead math", "heavy metal compliance for California".
 ---
 
 # Prop 65 Lead Exposure Calculator
 
-Computes whether a finished capsule product exceeds the California Proposition 65 Maximum Allowable Dose Level (MADL) for lead (0.5 ug/day) given the lead ppm on each raw-material COA, the mg of each raw material per capsule, and the maximum label dose in capsules/day. Built for Natural Cure Labs formulations but works for any capsule product.
+Computes whether finished capsule product exceeds California Proposition 65 MADL for lead (0.5 ug/day) given raw-material COA lead ppm, mg per capsule, and max label dose in capsules/day. Works for any capsule product.
 
 ## When to use this skill
 
-- User is deciding whether a capsule product needs a California Prop 65 warning label.
-- User shares a Certificate of Analysis (COA) with a lead result in ppm and wants to know the finished-product exposure.
-- User is formulating or reformulating a multi-ingredient capsule (e.g. a botanical stack) and needs a lead budget across ingredients.
-- User wants to identify which ingredient contributes the most lead so they can tighten that spec or swap suppliers.
-- User is confused because a raw material "passes COA" under USP <232> / ICH Q3D (5 ug/day PDE) but may still fail Prop 65 (0.5 ug/day, 10x stricter).
-- User asks about MADL, 27 CCR 25805, or California heavy-metal compliance for a dietary supplement.
+- Deciding whether capsule product needs California Prop 65 warning label.
+- COA has lead in ppm; need finished-product exposure.
+- Formulating/reformulating multi-ingredient capsule; need lead budget across ingredients.
+- Identifying dominant lead contributor to tighten spec or swap suppliers.
+- Raw material "passes COA" under USP <232> / ICH Q3D (5 ug/day PDE) but may fail Prop 65 (0.5 ug/day, 10x stricter).
+- Questions about MADL, 27 CCR 25805, California heavy-metal compliance for dietary supplements.
 
-Do NOT invoke for general heavy-metal toxicology, FDA Supplement Facts labeling, or pure USP <232> questions that are not being connected to Prop 65.
+Do NOT invoke for general heavy-metal toxicology, FDA Supplement Facts labeling, or pure USP <232> questions unconnected to Prop 65.
 
 ## How it works
 
-The math is linear. For each ingredient, `1 ppm == 1 ug Pb / g raw material`, so:
+Math is linear. Per ingredient, `1 ppm == 1 ug Pb / g raw material`:
 
 ```
 lead_ug_per_capsule = sum over ingredients of (lead_ppm * mg_per_capsule / 1000)
@@ -28,13 +28,13 @@ lead_ug_per_day     = lead_ug_per_capsule * capsules_per_day
 percent_of_MADL     = lead_ug_per_day / 0.5 * 100
 ```
 
-Results are classified into four risk zones based on the fraction of MADL:
+Four risk zones by fraction of MADL:
 
 | Zone         | Range of daily exposure | Meaning |
 |--------------|-------------------------|---------|
 | SAFE         | < 40% of MADL           | Comfortable headroom. |
-| CAUTION      | 40% - 80% of MADL       | Within MADL but above the 40% internal target NCL uses for at-risk products. |
-| HIGH RISK    | 80% - 100% of MADL      | Within MADL but less than 20% headroom. Typical ICP-MS analytical variability (+/- 10%) can push a future lot over. |
+| CAUTION      | 40% - 80% of MADL       | Within MADL but above 40% internal target for at-risk products. |
+| HIGH RISK    | 80% - 100% of MADL      | Within MADL, <20% headroom. Typical ICP-MS variability (+/- 10%) can push future lot over. |
 | OVER LIMIT   | >= 100% of MADL         | Prop 65 warning required for California sales. Reformulate or re-source. |
 
 ## Usage
@@ -45,7 +45,7 @@ Results are classified into four risk zones based on the fraction of MADL:
 uv run scripts/calculate.py -i "Loquat Leaf 10:1" 0.3604 600 -c 2
 ```
 
-This says: one raw material, 0.3604 ppm lead on the COA, 600 mg of that raw material per capsule, two capsules per day.
+One raw material, 0.3604 ppm lead on COA, 600 mg per capsule, two capsules/day.
 
 ### Multi-ingredient capsule
 
@@ -57,23 +57,23 @@ uv run scripts/calculate.py \
   -c 2
 ```
 
-Repeat `-i` once per raw material in the capsule. Lead contributions add.
+Repeat `-i` per raw material. Lead contributions add.
 
-### From a JSON formula file
+### From JSON formula file
 
 ```bash
 uv run scripts/calculate.py --ingredients-file reference/level_off.json
 ```
 
-Use this for versioned formulas or when the same spec is referenced from multiple places. CLI flags `--capsules-per-day` and `--madl` override values set in the file, so you can quickly test "what if we went to 3 caps/day" without editing the file.
+Use for versioned formulas or when same spec is referenced from multiple places. CLI flags `--capsules-per-day` and `--madl` override file values — test "what if 3 caps/day" without editing file.
 
 ### Machine-readable output
 
 ```bash
-uv run scripts/calculate.py --ingredients-file reference/level_off.json --json
+uv run scripts/calculate.py --ingredients-file reference/multi_ingredient.json --json
 ```
 
-Emits the full input + output payload as JSON on stdout. Use this when piping into other tooling.
+Emits full input + output payload as JSON on stdout. Use when piping to other tooling.
 
 ### Library use
 
@@ -91,15 +91,15 @@ result = calculate_lead_exposure(
 print(result.lead_ug_per_day, result.percent_of_madl, result.risk_level)
 ```
 
-`result.ingredient_breakdown()` returns per-ingredient rows sorted by ug/day descending, which is the leverage map for reformulation.
+`result.ingredient_breakdown()` returns per-ingredient rows sorted by ug/day descending — leverage map for reformulation.
 
 ## Input reference
 
 ### `--ingredient NAME PPM MG_PER_CAPSULE`
 
-- `NAME` - any string; quote it if it contains spaces or colons (e.g. `"Loquat Leaf 10:1"`). Labeling only, not used in math.
-- `PPM` - the lead result from the COA, in parts per million. `1 ppm == 1 ug Pb / g raw material`.
-- `MG_PER_CAPSULE` - milligrams of this raw material in **one capsule**. This is the single most common input error. It is NOT the serving dose, NOT the daily dose, and NOT the batch mass. If the label says "Take 1 capsule twice daily, 500 mg per serving" and each serving is one capsule, then `MG_PER_CAPSULE = 500` and `--capsules-per-day 2`. Do not multiply yourself; the script does that.
+- `NAME` — any string; quote if it contains spaces or colons (e.g. `"Loquat Leaf 10:1"`). Label only, not math.
+- `PPM` — lead result from COA, parts per million. `1 ppm == 1 ug Pb / g raw material`.
+- `MG_PER_CAPSULE` — mg of this raw material in **one capsule**. Most common input error. NOT serving dose, NOT daily dose, NOT batch mass. If label says "Take 1 capsule twice daily, 500 mg per serving" and each serving is one capsule, then `MG_PER_CAPSULE = 500` and `--capsules-per-day 2`. Do not pre-multiply; script does it.
 
 ### JSON file schema
 
@@ -115,29 +115,29 @@ print(result.lead_ug_per_day, result.percent_of_madl, result.risk_level)
 }
 ```
 
-`madl_ug_per_day` is optional and defaults to 0.5. `capsules_per_day` may be set in the file or on the CLI; the CLI value wins if both are set. See `examples/level_off.json` for the canonical example.
+`madl_ug_per_day` optional, defaults to 0.5. `capsules_per_day` may be set in file or CLI; CLI wins if both set. Canonical example in `reference/multi_ingredient.json`.
 
 ## Output interpretation
 
-The console renderer prints a headline verdict, a per-ingredient breakdown table (sorted by ug/day descending), a totals block, and a guidance panel. The guidance text depends on the risk zone:
+Console renderer prints headline verdict, per-ingredient breakdown table (sorted by ug/day descending), totals block, guidance panel. Guidance text depends on risk zone:
 
-- **SAFE** - "Comfortable margin below the MADL." No action needed.
-- **CAUTION** - "Within MADL but above the 40%-of-MADL internal threshold. Consider tightening the incoming-raw-material spec and per-lot retesting." Good trigger to renegotiate supplier specs.
-- **HIGH RISK** - "Within MADL but with < 20% headroom. Typical ICP-MS +/- 10% variability could push a future lot over." Treat as imminent-risk: either re-source, reduce per-capsule extract mass, or lower the max daily capsule count.
-- **OVER LIMIT** - "Prop 65 warning required for California sales at this formulation." Action is non-optional. Reformulate or add the warning.
+- **SAFE** — "Comfortable margin below the MADL." No action.
+- **CAUTION** — "Within MADL but above the 40%-of-MADL internal threshold. Consider tightening incoming-raw-material spec and per-lot retesting." Trigger to renegotiate supplier specs.
+- **HIGH RISK** — "Within MADL but with < 20% headroom. Typical ICP-MS +/- 10% variability could push a future lot over." Imminent-risk: re-source, reduce per-capsule extract mass, or lower max daily capsule count.
+- **OVER LIMIT** — "Prop 65 warning required for California sales at this formulation." Non-optional. Reformulate or add warning.
 
-Look at the breakdown table to identify the dominant lead contributor - that is the leverage point for reformulation.
+Breakdown table identifies dominant lead contributor — leverage point for reformulation.
 
 ## Exit codes
 
-- `0` - Daily exposure is below the MADL. No Prop 65 warning required.
-- `1` - Daily exposure is at or above the MADL. Warning required.
-- `2` - Usage or input error (argparse default).
+- `0` — Daily exposure below MADL. No Prop 65 warning required.
+- `1` — Daily exposure at or above MADL. Warning required.
+- `2` — Usage or input error (argparse default).
 
-These are stable; use them in shell pipelines or CI to gate builds.
+Stable; use in shell pipelines or CI to gate builds.
 
 ## Regulatory references
 
 - California Prop 65 MADL for lead: **0.5 ug/day**, reproductive-toxicity endpoint, Title 27 CCR section 25805.
-- Compare to USP <232> / ICH Q3D oral Permitted Daily Exposure for lead: **5 ug/day**. This is the limit most raw-material COAs are written against.
-- Prop 65 is **10x stricter** than USP <232>. A COA that says "passes spec" under USP <232> can easily fail Prop 65 once you account for the per-capsule extract mass and the max daily dose. Always re-run the math against 0.5 ug/day before making a California labeling decision.
+- USP <232> / ICH Q3D oral Permitted Daily Exposure for lead: **5 ug/day**. Limit most raw-material COAs are written against.
+- Prop 65 is **10x stricter** than USP <232>. COA that "passes spec" under USP <232> can fail Prop 65 once per-capsule extract mass and max daily dose are accounted for. Always re-run math against 0.5 ug/day before California labeling decision.

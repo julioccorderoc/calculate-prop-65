@@ -9,8 +9,8 @@ from __future__ import annotations
 MADL_LEAD_UG_PER_DAY: float = 0.5
 
 #: Fraction of the MADL at which we classify exposure as "CAUTION".
-#: Below this → SAFE. This threshold mirrors the 40%-of-MADL internal release
-#: target already recommended for at-risk NCL products such as Level Off.
+#: Below this → SAFE. This threshold mirrors a typical 40%-of-MADL internal
+#: release target used by formulators for at-risk products.
 CAUTION_THRESHOLD_FRACTION: float = 0.40
 
 #: Fraction of the MADL at which we classify exposure as "HIGH RISK".
