@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-from .calculator import calculate_lead_exposure
 from .constants import MADL_LEAD_UG_PER_DAY
-from .models import ExposureResult, Ingredient
+from .models import ExposureResult, Ingredient, calculate_lead_exposure
+from .risk import RiskZone
+from .schema import Formula
 
 __all__ = [
     "Ingredient",
     "ExposureResult",
     "calculate_lead_exposure",
     "MADL_LEAD_UG_PER_DAY",
+    "RiskZone",
+    "Formula",
 ]

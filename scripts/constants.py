@@ -1,4 +1,10 @@
-"""Regulatory constants and shared styling for the Prop 65 lead calculator."""
+"""Regulatory constants for the Prop 65 lead calculator.
+
+Risk-zone styling and guidance text live on :class:`scripts.risk.RiskZone`
+so the full risk taxonomy (threshold, display name, rich style, guidance)
+is defined in one place. Only the numeric thresholds remain here so they
+stay easy to audit as standalone regulatory constants.
+"""
 
 from __future__ import annotations
 
@@ -17,13 +23,3 @@ CAUTION_THRESHOLD_FRACTION: float = 0.40
 #: Above 80% of MADL, ±10% ICP-MS analytical variability can push a future
 #: lot over the limit, so the product must be treated as imminent-risk.
 HIGH_RISK_THRESHOLD_FRACTION: float = 0.80
-
-#: Rich style strings applied to each qualitative risk level in the console
-#: renderer. Kept next to the threshold constants so the whole risk taxonomy
-#: lives in one module.
-RISK_STYLES: dict[str, str] = {
-    "SAFE":       "bold green",
-    "CAUTION":    "bold yellow",
-    "HIGH RISK":  "bold dark_orange",
-    "OVER LIMIT": "bold red",
-}

@@ -1,17 +1,23 @@
-"""Input parsing: CLI ingredient triplets and JSON ingredients files."""
+"""Input parsing: CLI ingredient triplets and JSON ingredients files.
+
+This module is library code: it knows about :class:`Ingredient` and the
+:class:`Formula` schema but it does not know about argparse or any other
+CLI framework. Errors are surfaced as plain ``ValueError`` — CLI callers
+catch these and translate them into ``argparse`` errors at their layer.
+"""
 
 from __future__ import annotations
 
-import argparse
 import json
 from pathlib import Path
 from typing import Sequence
 
 from .models import Ingredient
+from .schema import Formula
 
 
 def _parse_float(value: str, field_name: str, ingredient_name: str) -> float:
-    """Convert a CLI string to float or raise a clear argparse error.
+    """Convert a CLI string to float or raise a clear ValueError.
 
     DRY helper: the original inlined nearly-identical try/except blocks for
     every numeric field on the --ingredient triplet.
@@ -19,39 +25,43 @@ def _parse_float(value: str, field_name: str, ingredient_name: str) -> float:
     try:
         return float(value)
     except ValueError as exc:
-        raise argparse.ArgumentTypeError(
+        raise ValueError(
             f"Invalid {field_name} value '{value}' for ingredient '{ingredient_name}'."
         ) from exc
 
 
 def parse_ingredient_triplet(triplet: Sequence[str]) -> Ingredient:
-    """Convert a ``--ingredient NAME PPM MG`` CLI triplet into an Ingredient."""
+    """Convert a ``--ingredient NAME PPM MG`` CLI triplet into an Ingredient.
+
+    Raises ``ValueError`` on non-numeric ppm or mg values. Callers that want
+    to convert these into argparse errors can catch ``ValueError`` and
+    forward the message to ``parser.error``.
+    """
     name, ppm_str, mg_str = triplet
     lead_ppm = _parse_float(ppm_str, "ppm", name)
     mg_per_capsule = _parse_float(mg_str, "mg_per_capsule", name)
     return Ingredient(name=name, lead_ppm=lead_ppm, mg_per_capsule=mg_per_capsule)
 
 
-def load_ingredients_file(path: Path) -> tuple[list[Ingredient], dict]:
-    """Load an ``--ingredients-file`` JSON and return (ingredients, overrides).
+def load_formula_file(path: Path) -> Formula:
+    """Load an ingredients-file JSON and return a :class:`Formula`.
 
-    Overrides is a dict with any of ``capsules_per_day`` or ``madl_ug_per_day``
-    that were set in the file. Raises on malformed input.
+    Raises ``ValueError`` on malformed input (missing keys, non-list
+    ingredients, non-numeric values) with messages that name the offending
+    field. Raises ``OSError`` on I/O failure and ``json.JSONDecodeError``
+    (a ``ValueError`` subclass) on invalid JSON.
     """
     data = json.loads(path.read_text(encoding="utf-8"))
-    if "ingredients" not in data or not isinstance(data["ingredients"], list):
-        raise ValueError("ingredients file must contain an 'ingredients' list.")
-    ingredients = [
-        Ingredient(
-            name=entry["name"],
-            lead_ppm=float(entry["lead_ppm"]),
-            mg_per_capsule=float(entry["mg_per_capsule"]),
-        )
-        for entry in data["ingredients"]
-    ]
-    overrides = {
-        key: data[key]
-        for key in ("capsules_per_day", "madl_ug_per_day")
-        if key in data
-    }
-    return ingredients, overrides
+    return Formula.from_dict(data)
+
+
+def load_ingredients_file(path: Path) -> tuple[list[Ingredient], dict]:
+    """Backwards-compatible loader: returns ``(ingredients, overrides)``.
+
+    Preserved for the CLI and any external callers that predate the
+    :class:`Formula` type. Internally this just unpacks a
+    :meth:`load_formula_file` result, so both entry points share their
+    validation behaviour.
+    """
+    formula = load_formula_file(path)
+    return list(formula.ingredients), formula.overrides()
